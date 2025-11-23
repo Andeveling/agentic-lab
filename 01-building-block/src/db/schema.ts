@@ -39,9 +39,9 @@ export const catalogs = sqliteTable('catalogs', {
   updatedAt: integer('updated_at', { mode: 'timestamp' })
     .notNull()
     .$defaultFn(() => new Date()),
-}, (table) => ({
-  uniqueCatalogCampaign: unique().on(table.catalog, table.campaign),
-}));
+}, (table) => [
+  unique().on(table.catalog, table.campaign),
+]);
 
 // Tabla de productos
 export const products = sqliteTable('products', {
