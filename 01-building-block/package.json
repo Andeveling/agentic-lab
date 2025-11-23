@@ -17,7 +17,6 @@
     "@ai-sdk/openai": "^2.0.71",
     "@libsql/client": "^0.15.15",
     "ai": "^5.0.100",
-    "biome": "^0.3.3",
     "csv-parse": "^6.1.0",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
@@ -26,6 +25,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.3.7",
     "@types/node": "^24.10.1",
     "drizzle-kit": "^0.31.7",
     "tsx": "^4.20.6",
