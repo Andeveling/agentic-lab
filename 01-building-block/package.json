@@ -1,0 +1,32 @@
+{
+  "name": "01-building-block",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "packageManager": "pnpm@10.23.0",
+  "dependencies": {
+    "@ai-sdk/google": "^2.0.42",
+    "@ai-sdk/google-vertex": "^3.0.74",
+    "@ai-sdk/openai": "^2.0.71",
+    "@libsql/client": "^0.15.15",
+    "ai": "^5.0.100",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.7",
+    "drizzle-zod": "^0.8.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "drizzle-kit": "^0.31.7",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

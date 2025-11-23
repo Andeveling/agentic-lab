@@ -1,0 +1,13 @@
+{
+  "name": "agentic-lab",
+  "version": "1.0.0",
+  "description": "Este proyecto tiene ejemplos de implementacion de llms y utilidades para el desarrollo de agentes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.23.0"
+}
