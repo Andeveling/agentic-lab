@@ -1,61 +1,81 @@
-import { google } from '@ai-sdk/google';
-import { generateText, stepCountIs } from 'ai';
+import { google } from "@ai-sdk/google";
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import cors from "cors";
 import "dotenv/config";
-import { saveMarkdown } from './utils/save-markdown.js';
-import { searchProductsTool } from './tools/index.js';
-import { logger, logLLMSession } from './utils/logger.js';
-import { randomUUID } from 'crypto';
+import express, { type Request, type Response } from "express";
+import { searchProductsTool } from "./tools/index.js";
 
+const app = express();
+const PORT = 3032;
 
-// Skus a buscar:
-// 22236,"Brasier","Habano","40",77990,205
-// 009241,"Panty clásico de control","Habano","L",39990,207
-// 22285,"Bóxer","Blanco","S",25990,207
+// Middleware
+app.use(express.json());
+app.use(cors());
 
-// Generar ID único para la sesión
-const sessionId = randomUUID();
-const startTime = Date.now();
-
-// Ejemplo de uso del LLM aumentado con herramientas
-const userPrompt = 'Quiero hacer un pedido de los skus 22236, 009241 y 22285. ¿Puedes darme información de estos productos?';
-const modelName = 'gemini-2.5-flash';
-
-
-const stepsData: Array<{ stepNumber: number; text?: string; toolCalls?: any[]; toolResults?: any[]; finishReason?: string; usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number; reasoningTokens?: number } }> = [];
-// Ejecutar generación multi-step
-const result = await generateText({
-    model: google(modelName),
-    system: 'Eres un asistente de ventas. Cuando el usuario te pida información de productos, usa la herramienta searchProducts para recuperar datos y luego genera un resumen útil en español con tabla de productos (SKU, nombre, color, talla, precio, página). Si algún SKU no existe, indícalo claramente.',
-    tools: {
-        searchProducts: searchProductsTool,
-    },
-    stopWhen: stepCountIs(5), // permitir hasta 5 pasos (tool calls + respuesta final)
-    prompt: userPrompt,
-    onStepFinish({ text, toolCalls, toolResults, finishReason, usage }) {
-        stepsData.push({
-            stepNumber: stepsData.length + 1,
-            text,
-            toolCalls,
-            toolResults,
-            finishReason,
-            usage,
-        });
-    },
+// Ruta raíz
+app.get("/", (_req: Request, res: Response) => {
+    res.send("Chatbot API - Puerto 3032");
 });
 
-// Extraer valores finales
-const { text, toolCalls, toolResults } = result;
-const steps = await result.steps; // detalle de pasos original del SDK
-const usage = await result.usage; // uso del último paso
-const totalUsage = await result.totalUsage; // uso acumulado
-const duration = Date.now() - startTime;
-// Guardar todo el proceso en markdown
-await saveMarkdown({
-    text,
-    toolCalls,
-    toolResults,
-    prompt: userPrompt,
-    steps: stepsData,
-    usage,
-    totalUsage,
+// Health check
+app.get("/api/health", (_req: Request, res: Response) => {
+    res.json({ status: "ok", message: "API is running" });
+});
+
+// Endpoint POST /chat para el chatbot con AI SDK
+app.post("/api/chat", async (req: Request, res: Response) => {
+    try {
+        const { messages } = req.body as { messages: UIMessage[] };
+
+        console.log("Received body:", JSON.stringify(req.body, null, 2));
+
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            return res.status(400).json({
+                ok: false,
+                error: "El campo 'messages' es requerido y debe ser un array no vacío",
+                example: {
+                    messages: [
+                        {
+                            id: "msg-1",
+                            role: "user",
+                            parts: [ { type: "text", text: "Hola, busca el SKU 12345" } ],
+                        },
+                    ],
+                },
+            });
+        }
+
+        const result = streamText({
+            model: google("gemini-2.0-flash"),
+            system: `Eres un asistente de ventas amigable y profesional para Leonisa. 
+Ayudas a los clientes a buscar productos en el catálogo usando códigos SKU.
+Cuando el usuario mencione códigos de producto o SKUs, usa la herramienta de búsqueda.
+Responde siempre en español y de forma clara y concisa.`,
+            messages: convertToModelMessages(messages),
+            tools: {
+                searchProducts: searchProductsTool,
+            },
+        });
+
+        // Stream UI messages to response
+        result.pipeUIMessageStreamToResponse(res);
+    } catch (error) {
+        console.error("Error en /api/chat:", error);
+        res.status(500).json({
+            ok: false,
+            error: "Error al procesar la solicitud",
+        });
+    }
+});
+
+// Manejo de rutas no encontradas
+app.use((_req: Request, res: Response) => {
+    res.status(404).json({ message: "Not Found", ok: false });
+});
+
+// Iniciar servidor
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor escuchando en http://localhost:${PORT}`);
+    console.log(`📝 Endpoint POST: http://localhost:${PORT}/api/chat`);
+    console.log(`✅ Health check GET: http://localhost:${PORT}/api/health`);
 });
